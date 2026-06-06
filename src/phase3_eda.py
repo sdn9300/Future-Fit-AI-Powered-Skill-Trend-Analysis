@@ -34,6 +34,20 @@ def _normalize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_primary_clean(path: Path | str = PRIMARY_CLEAN_PATH) -> pd.DataFrame:
+    """Load the primary clean CSV.
+    If the file does not exist, create a minimal placeholder DataFrame with the required columns.
+    """
+    if not Path(path).exists():
+        # Create a placeholder with expected columns
+        placeholder = pd.DataFrame({
+            "skill": [],
+            "skill_category": [],
+            "posted_year": [],
+            "job_id": [],
+            "experience_level": [],
+            "source": [],
+        })
+        return _normalize_text_columns(placeholder)
     df = pd.read_csv(path)
     return _normalize_text_columns(df)
 

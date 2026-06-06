@@ -44,8 +44,16 @@ DEFAULT_THEME = {
 
 @st.cache_data(show_spinner=False)
 def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    primary = load_primary_clean(PRIMARY_CLEAN_PATH)
-    linkedin_validation = load_linkedin_validation(LINKEDIN_VALIDATION_PATH)
+    try:
+        primary = load_primary_clean(PRIMARY_CLEAN_PATH)
+    except FileNotFoundError:
+        st.warning('Primary data file not found. Please ensure data/clean/primary_skills_long.csv exists.')
+        primary = pd.DataFrame()
+    try:
+        linkedin_validation = load_linkedin_validation(LINKEDIN_VALIDATION_PATH)
+    except FileNotFoundError:
+        st.warning('LinkedIn validation file not found. Please ensure data/clean/linkedin_validation.csv exists.')
+        linkedin_validation = pd.DataFrame()
     return primary, linkedin_validation
 
 

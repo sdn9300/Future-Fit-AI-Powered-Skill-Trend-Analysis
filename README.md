@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Future Fit
 
 ![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)
@@ -103,4 +103,4 @@ M.A. English Literature (First Division), Presidency University
 Executive PG Programme in Data Science & AI, IIT Roorkee (In Progress)
 
 [Portfolio](https://sdn9300.github.io) | [GitHub](https://github.com/sdn9300) | [LinkedIn](https://linkedin.com/in/soumyadeep-nath-941780250)
-=
+

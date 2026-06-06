@@ -1,4 +1,4 @@
-data/raw/
+.streamlit/secrets.toml.example
 *.csv
 *.ipynb_checkpoints
 __pycache__/

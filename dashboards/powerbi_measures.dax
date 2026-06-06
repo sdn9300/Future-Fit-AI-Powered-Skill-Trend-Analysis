@@ -1,0 +1,84 @@
+-- Power BI measures for Future Fit
+-- Table name assumed: SkillFacts
+
+Total Skill Mentions =
+COUNTROWS('SkillFacts')
+
+Unique Skills =
+DISTINCTCOUNT('SkillFacts'[skill])
+
+Unique Jobs =
+DISTINCTCOUNT('SkillFacts'[job_id])
+
+Average Skills per Job =
+DIVIDE([Total Skill Mentions], [Unique Jobs], 0)
+
+Year Min =
+MIN('SkillFacts'[Year])
+
+Year Max =
+MAX('SkillFacts'[Year])
+
+Year Span Text =
+FORMAT([Year Min], "0") & " - " & FORMAT([Year Max], "0")
+
+Top Skill Mentions =
+VAR TopSkillTable =
+    TOPN(
+        1,
+        SUMMARIZE(
+            'SkillFacts',
+            'SkillFacts'[skill],
+            "Mentions", [Total Skill Mentions]
+        ),
+        [Mentions], DESC,
+        'SkillFacts'[skill], ASC
+    )
+RETURN
+    MAXX(TopSkillTable, [Mentions])
+
+Top Skill Name =
+VAR TopSkillTable =
+    TOPN(
+        1,
+        SUMMARIZE(
+            'SkillFacts',
+            'SkillFacts'[skill],
+            "Mentions", [Total Skill Mentions]
+        ),
+        [Mentions], DESC,
+        'SkillFacts'[skill], ASC
+    )
+RETURN
+    CONCATENATEX(TopSkillTable, 'SkillFacts'[skill], ", ")
+
+Top Category Mentions =
+VAR TopCategoryTable =
+    TOPN(
+        1,
+        SUMMARIZE(
+            'SkillFacts',
+            'SkillFacts'[skill_category],
+            "Mentions", [Total Skill Mentions]
+        ),
+        [Mentions], DESC,
+        'SkillFacts'[skill_category], ASC
+    )
+RETURN
+    MAXX(TopCategoryTable, [Mentions])
+
+Top Category Name =
+VAR TopCategoryTable =
+    TOPN(
+        1,
+        SUMMARIZE(
+            'SkillFacts',
+            'SkillFacts'[skill_category],
+            "Mentions", [Total Skill Mentions]
+        ),
+        [Mentions], DESC,
+        'SkillFacts'[skill_category], ASC
+    )
+RETURN
+    CONCATENATEX(TopCategoryTable, 'SkillFacts'[skill_category], ", ")
+

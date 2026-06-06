@@ -1,0 +1,18 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldFill" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7E8BE"/>
+      <stop offset="0.45" stop-color="#D7B15A"/>
+      <stop offset="1" stop-color="#9B6C1F"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="#1B122F" stroke="url(#goldFill)" stroke-opacity="0.55"/>
+  <path d="M18 18H32.2C36.3 18 39.6 21.3 39.6 25.4C39.6 29.5 36.3 32.8 32.2 32.8H23.2L18 18Z" fill="url(#goldFill)"/>
+  <path d="M18 18V46" stroke="url(#goldFill)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M18 18H46" stroke="url(#goldFill)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M18 46L29 32.8" stroke="url(#goldFill)" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="18" cy="18" r="5.3" fill="#12203A" stroke="url(#goldFill)" stroke-width="2.4"/>
+  <circle cx="46" cy="18" r="5.3" fill="#12203A" stroke="url(#goldFill)" stroke-width="2.4"/>
+  <circle cx="18" cy="46" r="5.3" fill="#12203A" stroke="url(#goldFill)" stroke-width="2.4"/>
+  <circle cx="29" cy="32.8" r="5.3" fill="#12203A" stroke="url(#goldFill)" stroke-width="2.4"/>
+</svg>

@@ -1,0 +1,20 @@
+{
+  "name": "Future Fit",
+  "background": "#120a22",
+  "foreground": "#f6e7bf",
+  "tableAccent": "#d7b15a",
+  "dataColors": [
+    "#d7b15a",
+    "#f2dfb2",
+    "#a67cff",
+    "#8d64ff",
+    "#f6e7bf",
+    "#b68a35"
+  ],
+  "good": "#d7b15a",
+  "neutral": "#f6e7bf",
+  "bad": "#8d64ff",
+  "maximum": "#f2dfb2",
+  "minimum": "#26173f",
+  "null": "#6f5b90"
+}

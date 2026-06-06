@@ -1,0 +1,9 @@
+data/raw/
+*.csv
+*.ipynb_checkpoints
+__pycache__/
+*.pyc
+.env
+.streamlit/secrets.toml
+cold-email-agent/
+Resume Builder Project/

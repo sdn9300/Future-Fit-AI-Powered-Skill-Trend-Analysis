@@ -1,9 +1,8 @@
+.streamlit/secrets.toml
 .streamlit/secrets.toml.example
-*.csv
 *.ipynb_checkpoints
 __pycache__/
 *.pyc
 .env
-.streamlit/secrets.toml
 cold-email-agent/
 Resume Builder Project/

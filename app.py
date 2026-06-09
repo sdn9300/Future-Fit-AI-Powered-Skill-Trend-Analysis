@@ -27,6 +27,21 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 PRIMARY_CLEAN_PATH = PROJECT_ROOT / "data" / "clean" / "primary_skills_long.csv"
 LINKEDIN_VALIDATION_PATH = PROJECT_ROOT / "data" / "clean" / "linkedin_validation.csv"
 
+
+def find_data_file(filename: str) -> Path | None:
+    """Search for *filename* under PROJECT_ROOT (and one level up) via rglob."""
+    candidate = PROJECT_ROOT / "data" / "clean" / filename
+    if candidate.exists():
+        return candidate
+    for base in (PROJECT_ROOT, PROJECT_ROOT.parent):
+        try:
+            for match in base.rglob(filename):
+                if match.is_file():
+                    return match
+        except Exception:
+            continue
+    return None
+
 DEFAULT_THEME = {
     "title": "Future Fit",
     "tagline": "AI-Powered Skill Trend Analysis",
@@ -44,16 +59,65 @@ DEFAULT_THEME = {
 
 @st.cache_data(show_spinner=False)
 def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    try:
-        primary = load_primary_clean(PRIMARY_CLEAN_PATH)
-    except FileNotFoundError:
-        st.warning('Primary data file not found. Please ensure data/clean/primary_skills_long.csv exists.')
-        primary = pd.DataFrame()
-    try:
-        linkedin_validation = load_linkedin_validation(LINKEDIN_VALIDATION_PATH)
-    except FileNotFoundError:
-        st.warning('LinkedIn validation file not found. Please ensure data/clean/linkedin_validation.csv exists.')
-        linkedin_validation = pd.DataFrame()
+    """Robust loading: default path → repo search → file uploader fallback."""
+    primary = pd.DataFrame()
+    linkedin_validation = pd.DataFrame()
+
+    # --- primary data ---
+    primary_file = None
+    if PRIMARY_CLEAN_PATH.exists():
+        primary_file = PRIMARY_CLEAN_PATH
+    else:
+        primary_file = find_data_file("primary_skills_long.csv")
+
+    if primary_file:
+        try:
+            primary = load_primary_clean(primary_file)
+        except FileNotFoundError:
+            st.warning(f"Primary data file {primary_file} not found.")
+        except Exception as exc:
+            st.warning(f"Failed to load primary data from {primary_file}: {exc}")
+    else:
+        st.warning(
+            "Primary data file not found in the repository. "
+            "You can upload it below (CSV expected: primary_skills_long.csv)."
+        )
+        uploaded_primary = st.file_uploader(
+            "Upload primary_skills_long.csv", type="csv", key="upload_primary"
+        )
+        if uploaded_primary is not None:
+            try:
+                primary = pd.read_csv(uploaded_primary)
+            except Exception as exc:
+                st.error(f"Uploaded primary file could not be read: {exc}")
+
+    # --- linkedin validation data ---
+    linkedin_file = None
+    if LINKEDIN_VALIDATION_PATH.exists():
+        linkedin_file = LINKEDIN_VALIDATION_PATH
+    else:
+        linkedin_file = find_data_file("linkedin_validation.csv")
+
+    if linkedin_file:
+        try:
+            linkedin_validation = load_linkedin_validation(linkedin_file)
+        except FileNotFoundError:
+            st.warning(f"LinkedIn validation file {linkedin_file} not found.")
+        except Exception as exc:
+            st.warning(f"Failed to load LinkedIn validation data from {linkedin_file}: {exc}")
+    else:
+        st.info(
+            "LinkedIn validation file not found. You can upload it below (optional):"
+        )
+        uploaded_linkedin = st.file_uploader(
+            "Upload linkedin_validation.csv", type="csv", key="upload_linkedin"
+        )
+        if uploaded_linkedin is not None:
+            try:
+                linkedin_validation = pd.read_csv(uploaded_linkedin)
+            except Exception as exc:
+                st.error(f"Uploaded LinkedIn file could not be read: {exc}")
+
     return primary, linkedin_validation
 
 
@@ -978,7 +1042,7 @@ def main() -> None:
     theme = get_theme()
     st.set_page_config(
         page_title=theme["title"],
-        page_icon=str(PROJECT_ROOT / "assets" / "future_fit_favicon.svg"),
+        page_icon="📊",
         layout="wide",
         initial_sidebar_state="expanded",
     )

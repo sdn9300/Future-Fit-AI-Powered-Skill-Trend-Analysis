@@ -4,5 +4,7 @@
 __pycache__/
 *.pyc
 .env
+data/raw/
+data/clean/linkedin_validation.csv
 cold-email-agent/
 Resume Builder Project/

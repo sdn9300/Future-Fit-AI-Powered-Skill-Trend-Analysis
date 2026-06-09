@@ -66,7 +66,26 @@ def find_data_file(filename: str) -> Path | None:
     return None
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner="Loading primary dataset...")
+def load_primary_clean_cached(path: Path) -> pd.DataFrame:
+    return load_primary_clean(path)
+
+
+@st.cache_data(show_spinner="Loading LinkedIn dataset...")
+def load_linkedin_validation_cached(path: Path) -> pd.DataFrame:
+    return load_linkedin_validation(path)
+
+
+@st.cache_data(show_spinner="Parsing uploaded dataset...")
+def parse_uploaded_csv_cached(file_bytes: bytes) -> pd.DataFrame:
+    import io
+    df = pd.read_csv(io.BytesIO(file_bytes))
+    for col in ["skill", "skill_category", "skill_level", "experience_level", "source"]:
+        if col in df.columns:
+            df[col] = df[col].astype("string").str.strip().str.lower()
+    if "posted_year" in df.columns:
+        df["posted_year"] = pd.to_numeric(df["posted_year"], errors="coerce").astype("Int64")
+    return df
 def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Robust loading: try default path, search the repo for the file, then fall back to file uploader.
@@ -85,9 +104,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if primary_file:
         try:
-            primary = load_primary_clean(primary_file)
-        except FileNotFoundError:
-            st.warning(f"Primary data file {primary_file} not found.")
+            primary = load_primary_clean_cached(primary_file)
         except Exception as exc:
             st.warning(f"Failed to load primary data from {primary_file}: {exc}")
     else:
@@ -100,7 +117,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
         )
         if uploaded_primary is not None:
             try:
-                primary = pd.read_csv(uploaded_primary)
+                primary = parse_uploaded_csv_cached(uploaded_primary.getvalue())
             except Exception as exc:
                 st.error(f"Uploaded primary file could not be read: {exc}")
 
@@ -113,9 +130,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if linkedin_file:
         try:
-            linkedin_validation = load_linkedin_validation(linkedin_file)
-        except FileNotFoundError:
-            st.warning(f"LinkedIn validation file {linkedin_file} not found.")
+            linkedin_validation = load_linkedin_validation_cached(linkedin_file)
         except Exception as exc:
             st.warning(f"Failed to load LinkedIn validation data from {linkedin_file}: {exc}")
     else:
@@ -127,7 +142,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
         )
         if uploaded_linkedin is not None:
             try:
-                linkedin_validation = pd.read_csv(uploaded_linkedin)
+                linkedin_validation = parse_uploaded_csv_cached(uploaded_linkedin.getvalue())
             except Exception as exc:
                 st.error(f"Uploaded LinkedIn file could not be read: {exc}")
 

@@ -27,21 +27,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 PRIMARY_CLEAN_PATH = PROJECT_ROOT / "data" / "clean" / "primary_skills_long.csv"
 LINKEDIN_VALIDATION_PATH = PROJECT_ROOT / "data" / "clean" / "linkedin_validation.csv"
 
-
-def find_data_file(filename: str) -> Path | None:
-    """Search for *filename* under PROJECT_ROOT (and one level up) via rglob."""
-    candidate = PROJECT_ROOT / "data" / "clean" / filename
-    if candidate.exists():
-        return candidate
-    for base in (PROJECT_ROOT, PROJECT_ROOT.parent):
-        try:
-            for match in base.rglob(filename):
-                if match.is_file():
-                    return match
-        except Exception:
-            continue
-    return None
-
 DEFAULT_THEME = {
     "title": "Future Fit",
     "tagline": "AI-Powered Skill Trend Analysis",
@@ -58,13 +43,41 @@ DEFAULT_THEME = {
 
 
 @st.cache_data(show_spinner=False)
+def find_data_file(filename: str) -> Path | None:
+    """
+    Helper to locate data files in common locations within the repository.
+    Checks the default data/clean path first, then scans PROJECT_ROOT and its parent.
+    Returns Path if found, otherwise None.
+    """
+    # check the default location first
+    candidate = PROJECT_ROOT / "data" / "clean" / filename
+    if candidate.exists():
+        return candidate
+
+    # search PROJECT_ROOT and its parent for the filename
+    for base in (PROJECT_ROOT, PROJECT_ROOT.parent):
+        try:
+            for match in base.rglob(filename):
+                if match.is_file():
+                    return match
+        except Exception:
+            # ignore permission errors or odd filesystem entries
+            continue
+    return None
+
+
+@st.cache_data(show_spinner=False)
 def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Robust loading: default path → repo search → file uploader fallback."""
+    """
+    Robust loading: try default path, search the repo for the file, then fall back to file uploader.
+    Returns two DataFrames (primary, linkedin_validation) — may be empty if not provided.
+    """
     primary = pd.DataFrame()
     linkedin_validation = pd.DataFrame()
 
     # --- primary data ---
-    primary_file = None
+    primary_file: Path | None = None
+    # existing constant path keeps backward compatibility
     if PRIMARY_CLEAN_PATH.exists():
         primary_file = PRIMARY_CLEAN_PATH
     else:
@@ -92,7 +105,7 @@ def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
                 st.error(f"Uploaded primary file could not be read: {exc}")
 
     # --- linkedin validation data ---
-    linkedin_file = None
+    linkedin_file: Path | None = None
     if LINKEDIN_VALIDATION_PATH.exists():
         linkedin_file = LINKEDIN_VALIDATION_PATH
     else:

@@ -152,12 +152,10 @@ def cooccurrence_matrix(df: pd.DataFrame, top_n: int = TOP_SKILLS_FOR_MATRIX) ->
     for skill in top_skills:
         matrix.loc[skill, skill] = 0
 
-    pairs = (
-        pd.Series(counter)
-        .sort_values(ascending=False)
-        .reset_index(name="co_occurrence")
-        .rename(columns={"index": "skill_pair"})
-    )
+    pairs = pd.DataFrame(
+        list(counter.items()),
+        columns=["skill_pair", "co_occurrence"]
+    ).sort_values("co_occurrence", ascending=False).reset_index(drop=True)
     return matrix, pairs
 
 

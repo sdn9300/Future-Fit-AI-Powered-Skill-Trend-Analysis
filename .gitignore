@@ -6,5 +6,6 @@ __pycache__/
 .env
 data/raw/
 data/clean/linkedin_validation.csv
-cold-email-agent/
+#cold-email-agent/
+!cold-email-agent/.env.example
 Resume Builder Project/

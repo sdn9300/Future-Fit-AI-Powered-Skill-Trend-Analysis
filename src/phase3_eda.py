@@ -29,7 +29,7 @@ def _normalize_text_columns(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].astype("string").str.strip().str.lower()
     if "posted_year" in df.columns:
-        df["posted_year"] = pd.to_numeric(df["posted_year"], errors="coerce").astype("Int64")
+        df["posted_year"] = df["posted_year"].apply(lambda x: int(x) if str(x).isdigit() else (x.strip() if isinstance(x, str) else x))
     return df
 
 

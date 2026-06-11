@@ -84,7 +84,7 @@ def parse_uploaded_csv_cached(file_bytes: bytes) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].astype("string").str.strip().str.lower()
     if "posted_year" in df.columns:
-        df["posted_year"] = pd.to_numeric(df["posted_year"], errors="coerce").astype("Int64")
+        df["posted_year"] = df["posted_year"].apply(lambda x: int(x) if str(x).isdigit() else (x.strip() if isinstance(x, str) else x))
     return df
 def load_dashboard_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -506,7 +506,9 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
         st.markdown("### Filters")
         st.caption("These controls shape the overview, trends, and heatmap tabs.")
 
-        available_years = sorted(df["posted_year"].dropna().astype(int).unique().tolist())
+        numeric_years = sorted([int(y) for y in df["posted_year"].dropna().unique() if str(y).isdigit()])
+        non_numeric = sorted([str(y) for y in df["posted_year"].dropna().unique() if not str(y).isdigit()])
+        available_years = numeric_years + non_numeric
         selected_years = st.multiselect(
             "Years",
             available_years,
@@ -533,7 +535,7 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
 
     filtered = df.copy()
     if selected_years:
-        filtered = filtered[filtered["posted_year"].astype("Int64").isin(selected_years)]
+        filtered = filtered[filtered["posted_year"].apply(lambda x: str(x) in map(str, selected_years))]
     if selected_categories:
         filtered = filtered[filtered["skill_category"].isin(selected_categories)]
 
@@ -593,6 +595,7 @@ def make_top_skills_figure(df: pd.DataFrame, top_n: int = 20) -> go.Figure:
 
 def make_trend_figure(df: pd.DataFrame, skill: str) -> go.Figure:
     trend_df = df.copy()
+    trend_df = trend_df[trend_df["posted_year"].apply(lambda x: str(x).isdigit())]
     trend_df["posted_year"] = trend_df["posted_year"].astype("Int64")
     trend_df = trend_df[trend_df["skill"] == skill]
 
@@ -669,7 +672,7 @@ def make_heatmap_figure(df: pd.DataFrame, top_n: int) -> tuple[go.Figure, pd.Dat
 
 
 def render_header(theme: dict[str, str], df: pd.DataFrame) -> None:
-    years = sorted(df["posted_year"].dropna().astype(int).unique().tolist())
+    years = sorted([int(y) for y in df["posted_year"].dropna().unique() if str(y).isdigit()])
     top_skill = df["skill"].value_counts().idxmax()
     hero_chip_text = [
         f"{df['job_id'].nunique():,} jobs",
@@ -749,8 +752,9 @@ def render_overview_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
         .index[0]
     )
     avg_skills_per_job = df.groupby("job_id")["skill"].nunique().mean()
-    year_min = int(df["posted_year"].min())
-    year_max = int(df["posted_year"].max())
+    digit_years = df["posted_year"][df["posted_year"].apply(lambda x: str(x).isdigit())]
+    year_min = int(digit_years.min()) if not digit_years.empty else 2020
+    year_max = int(digit_years.max()) if not digit_years.empty else 2026
 
     render_card_grid(
         [
@@ -849,8 +853,9 @@ def render_trend_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
     with c2:
         metric = st.radio("Measure", ["Share", "Mentions"], horizontal=True)
     with c3:
-        year_min = int(df["posted_year"].min())
-        year_max = int(df["posted_year"].max())
+        digit_years = df["posted_year"][df["posted_year"].apply(lambda x: str(x).isdigit())]
+        year_min = int(digit_years.min()) if not digit_years.empty else 2020
+        year_max = int(digit_years.max()) if not digit_years.empty else 2026
         st.caption(f"Coverage: {year_min} to {year_max}")
 
     skill_rows = df[df["skill"] == selected_skill].copy()
@@ -867,6 +872,9 @@ def render_trend_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
         .merge(year_totals, on="posted_year", how="left")
     )
     annual["share"] = annual["mentions"] / annual["year_total"]
+    
+    # Exclude non-digit years for trend calculations
+    annual = annual[annual["posted_year"].apply(lambda x: str(x).isdigit())]
 
     latest = annual.iloc[-1]
     first = annual.iloc[0]

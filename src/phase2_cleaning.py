@@ -130,9 +130,17 @@ def clean_primary_dataset() -> pd.DataFrame:
     merged["job_id"] = merged["job_id_normalized"]
     merged = merged.drop(columns=["job_id_normalized"])
 
-    for col in ["min_experience_years", "salary_min_usd", "salary_max_usd", "posted_year"]:
+    # Fill unmatched metadata with "Not Specified"
+    merged["posted_year"] = merged["posted_year"].astype(object).fillna("Not Specified")
+    merged["experience_level"] = merged["experience_level"].fillna("Not Specified")
+    merged["country"] = merged["country"].fillna("Not Specified")
+
+    for col in ["min_experience_years", "salary_min_usd", "salary_max_usd"]:
         if col in merged.columns:
             merged[col] = pd.to_numeric(merged[col], errors="coerce").astype("Int64")
+
+    # If posted_year is numeric, keep it as Int64, otherwise keep as object/string
+    merged["posted_year"] = merged["posted_year"].apply(lambda x: int(x) if str(x).isdigit() else x)
 
     merged.to_csv(PRIMARY_OUTPUT, index=False)
 

@@ -74,8 +74,8 @@ skill-trend-analysis/
 
 ## How to Run Locally
 ```bash
-git clone https://github.com/sdn9300/skill-trend-analysis.git
-cd skill-trend-analysis
+git clone https://github.com/sdn9300/Future-Fit-AI-Powered-Skill-Trend-Analysis.git
+cd Future-Fit-AI-Powered-Skill-Trend-Analysis
 pip install -r requirements.txt
 ```
 

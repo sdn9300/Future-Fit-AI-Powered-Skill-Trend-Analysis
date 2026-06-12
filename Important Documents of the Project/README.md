@@ -10,8 +10,9 @@
 
 **AI-Powered Skill Trend Analysis** for 50,000 AI and Data Science job postings, built as a source-backed analytics workflow with a local Streamlit dashboard scaffold and an LLM-powered Skill Gap Advisor.
 
+🚀 **Live Deployed App (Streamlit Cloud):** [https://skilltrendanalysis-rf3zefgsjaa4l9f8pu2prb.streamlit.app](https://skilltrendanalysis-rf3zefgsjaa4l9f8pu2prb.streamlit.app)
+
 **Local demo:** [http://localhost:8501](http://localhost:8501)
-**Streamlit Cloud:** https://skilltrendanalysis-rf3zefgsjaa4l9f8pu2prb.streamlit.app
 
 ## Key Findings
 1. **ML skills dominate the dataset.** The `ml` category accounts for **101,975** of **224,605** cleaned skill mentions, or **45.4%** of all rows.

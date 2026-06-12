@@ -92,10 +92,14 @@ Set the Groq key in `.streamlit/secrets.toml`:
 GROQ_API_KEY = "your_key_here"
 ```
 
+
 Run the app locally:
 ```bash
 streamlit run app.py
 ```
+
+## Planned Future Enhancements
+* **Interactive Power BI Dashboard:** Build and integrate a Power BI dashboard using the exported Power BI-ready CSV data (`primary_skills_powerbi.csv`) to show cross-filtering, time-slicers, and corporate KPI metrics in a business-centric format.
 
 ## Screenshots
 ![Top skills ranking](assets/charts/01_skill_frequency.png)

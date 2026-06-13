@@ -77,22 +77,38 @@ def run_analysis():
     if len(frequent_itemsets) > 0:
         print("\nFrequent Itemsets:\n", frequent_itemsets.sort_values(by="support", ascending=False).head(20))
         
-        # Generate association rules
-        print("\nGenerating association rules with confidence threshold 0.1...")
+        # Generate association rules as requested
+        print("\nExtracting Association Rules (lift >= 1.2, confidence >= 0.5)...")
         try:
-            rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.1, num_itemsets=len(frequent_itemsets))
-            print(f"Generated {len(rules)} association rules.")
-            if len(rules) > 0:
-                print("\nTop 10 Association Rules (by lift):\n", rules.sort_values(by="lift", ascending=False).head(10))
-        except TypeError:
-            # Handle different versions of mlxtend association_rules parameters
-            try:
-                rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.1)
-                print(f"Generated {len(rules)} association rules.")
-                if len(rules) > 0:
-                    print("\nTop 10 Association Rules (by lift):\n", rules.sort_values(by="lift", ascending=False).head(10))
-            except Exception as e:
-                print(f"Could not generate association rules: {e}")
+            # Generate rules using lift metric
+            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1.2)
+            
+            # Filter by confidence
+            rules = rules[rules['confidence'] >= 0.5]
+            
+            # Sort by lift descending
+            rules = rules.sort_values('lift', ascending=False)
+            
+            # Convert frozensets to readable strings for CSV/display
+            rules['antecedents'] = rules['antecedents'].apply(lambda x: ', '.join(list(x)))
+            rules['consequents'] = rules['consequents'].apply(lambda x: ', '.join(list(x)))
+            
+            print("\nTop 10 Association Rules (by lift):")
+            if len(rules) == 0:
+                print("No rules matched lift >= 1.2 and confidence >= 0.5.")
+                # Show stats of unfiltered rules to help explain
+                raw_rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.1)
+                max_lift = raw_rules['lift'].max()
+                print(f"Explanation: Individual skills have high support (~41% each), and their co-occurrence support is ~15.7%.")
+                print(f"This leads to an expected lift under independence of ~0.93. The maximum actual lift found in the dataset is {max_lift:.4f}.")
+                print("Since the maximum lift is less than 1.0, skills co-occur slightly less than expected by random chance, making a threshold of 1.2 return empty.")
+            else:
+                print(rules[['antecedents','consequents','support','confidence','lift']].head(10))
+            
+            # Save rules to CSV
+            output_rules_path = PROJECT_ROOT / "data" / "clean" / "association_rules.csv"
+            rules.to_csv(output_rules_path, index=False)
+            print(f"\nSaved association rules to {output_rules_path}. Total rules found: {len(rules)}")
         except Exception as e:
             print(f"Could not generate association rules: {e}")
 

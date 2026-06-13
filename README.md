@@ -50,7 +50,7 @@
 
 ---
 
-## Market Basket Analysis (Phase 5)
+## Market Basket Analysis
 
 Using the **Apriori algorithm** (`mlxtend`) on all 50,000 job postings:
 

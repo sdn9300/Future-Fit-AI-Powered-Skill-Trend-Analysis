@@ -7,9 +7,10 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-Advisor-111827)
 ![mlxtend](https://img.shields.io/badge/mlxtend-Apriori-4B8BBE)
+![Prophet](https://img.shields.io/badge/Prophet-Forecasting-f29111)
 ![Power%20BI](https://img.shields.io/badge/Power%20BI-Portfolio-F2C811?logo=powerbi&logoColor=111827)
 
-**AI-Powered Skill Trend Analysis** for 50,000 AI and Data Science job postings, built as a source-backed analytics workflow with a local Streamlit dashboard scaffold, an LLM-powered Skill Gap Advisor, and a Market Basket Analysis engine for discovering co-occurring skill pairs.
+**AI-Powered Skill Trend Analysis** for 50,000 AI and Data Science job postings, built as a source-backed analytics workflow with a local Streamlit dashboard scaffold, an LLM-powered Skill Gap Advisor, a Market Basket Analysis engine, and a tiered yearly time-series Forecasting tab.
 
 🚀 **Live Deployed App (Streamlit Cloud):** [https://skilltrendanalysis-rf3zefgsjaa4l9f8pu2prb.streamlit.app](https://skilltrendanalysis-rf3zefgsjaa4l9f8pu2prb.streamlit.app)
 
@@ -22,6 +23,7 @@
 2. **GenAI mentions are extremely rare in the LinkedIn validation sample.** Only **4** GenAI skill rows appear across **180,106** LinkedIn validation rows, and all are in `mid senior` postings.
 3. **AWS is the most demanded skill and AWS + GCP is the strongest co-occurring pair.** `aws` appears **20,638** times, and `aws` + `gcp` co-occur **7,892** times.
 4. **Market Basket Analysis reveals 230 frequent skill itemsets** across 50,000 jobs. The strongest co-occurrence rule is `PyTorch → TensorFlow` (lift 0.94, support 15.5%) — reflecting that these frameworks act as near-substitutes while consistently requested together.
+5. **Yearly skill forecasting to 2027 shows flat/stable trends.** Because historical data contains 7 yearly points (2020–2026), a tiered modeling approach successfully fits Prophet on all top-10 skills, indicating steady demand into 2027 (e.g. Python rising slightly, TensorFlow and GCP remaining stable).
 
 ---
 
@@ -30,7 +32,7 @@
 |:------|:------|
 | Language | Python 3.11 |
 | Data wrangling | Pandas, NumPy |
-| Statistical analysis | SciPy, mlxtend (Apriori / Association Rules) |
+| Statistical analysis | SciPy, mlxtend (Apriori), Prophet (Yearly time-series forecasting) |
 | Visualization | Plotly, Matplotlib, Seaborn, WordCloud |
 | GenAI / LLM | Groq API (llama3-8b-8192) |
 | App layer | Streamlit |
@@ -47,6 +49,7 @@
 | 3 | 🔥 Skill Heatmap | Co-occurrence heatmap of top skill pairs by experience level |
 | 4 | 🧠 Skill Gap Advisor | LLM-powered learning path via Groq, enriched with MBA association insights |
 | 5 | 🛒 Skill Associations | Market Basket Analysis — interactive rules table + lift bar chart |
+| 6 | 🔮 Skill Forecast 2027 | Tiered time-series forecasting — interactive line plots + metrics |
 
 ---
 
@@ -74,6 +77,25 @@ Using the **Apriori algorithm** (`mlxtend`) on all 50,000 job postings:
 
 ---
 
+## Yearly Skill Forecasting (Phase 6)
+
+Using **Prophet** (with a simple linear regression fallback) to forecast yearly demand shares into 2027:
+- **Minimum Data Bins:** Only skills with $\ge 5$ years of real historical data points are analyzed (all 11 skills qualify with 7 years: 2020–2026).
+- **Uncertainty Fallback:** If Prophet's 80% confidence interval width is $> 1.5 \times \text{yhat}$, the pipeline automatically falls back to a simple linear trend extrapolation (done using `numpy.polyfit`).
+- **Trend Indicators:** Predicts the demand share for 2027 and flags direction (Rising, Declining, or Stable) based on a $\pm 10\%$ delta cutoff compared to the last known actual year.
+
+**Key outputs:**
+
+| File | Description |
+|:-----|:------------|
+| `src/forecaster.py` | Reusable forecasting pipeline and fallback logic module |
+| `data/clean/forecast_results.csv` | Pre-computed 2027 forecast metrics (predictions, bounds, methods) |
+| `assets/charts/07_skill_forecast.png` | Line chart showing historical data + 2027 projection points |
+| `notebooks/06_forecasting.ipynb` | Full forecasting workflow notebook |
+| `docs/PIPELINE_DECISIONS.md` | Detailed modeling methodology, tiered design, and limitations record |
+
+---
+
 ## Project Structure
 ```text
 Future-Fit-AI-Powered-Skill-Trend-Analysis/
@@ -89,7 +111,8 @@ Future-Fit-AI-Powered-Skill-Trend-Analysis/
 |       |-- 04_skill_mix_by_experience.png
 |       |-- 05_skill_wordcloud.png
 |       |-- 06_mba_top_rules.png        ← NEW: Top-10 association rules by lift
-|       `-- 07_mba_rules_heatmap.png    ← NEW: Skill × skill lift heatmap
+|       |-- 07_mba_rules_heatmap.png    ← NEW: Skill × skill lift heatmap
+|       `-- 07_skill_forecast.png       ← NEW: Historical + 2027 forecast lines
 |-- data/
 |   |-- raw/
 |   `-- clean/
@@ -98,15 +121,18 @@ Future-Fit-AI-Powered-Skill-Trend-Analysis/
 |       |-- primary_skills_powerbi.csv
 |       |-- primary_wide.csv            ← NEW: wide-format basket input
 |       |-- primary_onehot.csv          ← NEW: boolean one-hot matrix
-|       `-- mba_rules.csv               ← NEW: association rules output
+|       |-- mba_rules.csv               ← NEW: association rules output
+|       `-- forecast_results.csv        ← NEW: pre-computed 2027 forecasts
 |-- notebooks/
 |   |-- 01_data_collection.ipynb
 |   |-- 02_data_cleaning.ipynb
 |   |-- 03_eda_analysis.ipynb
 |   |-- 04_visualization_report.ipynb
-|   `-- 05_market_basket_analysis.ipynb ← NEW: full Apriori walkthrough
+|   |-- 05_market_basket_analysis.ipynb ← NEW: full Apriori walkthrough
+|   `-- 06_forecasting.ipynb            ← NEW: full yearly forecasting walkthrough
 |-- src/
 |   |-- market_basket.py                ← NEW: reusable MBA pipeline module
+|   |-- forecaster.py                   ← NEW: reusable forecasting pipeline module
 |   |-- run_apriori.py                  ← NEW: standalone script + chart generator
 |   |-- phase2_cleaning.py
 |   |-- phase3_eda.py
@@ -163,6 +189,7 @@ GROQ_API_KEY = "your_key_here"
 ![Word cloud summary](assets/charts/05_skill_wordcloud.png)
 ![Top-10 Skill Association Rules](assets/charts/06_mba_top_rules.png)
 ![Skill Association Lift Heatmap](assets/charts/07_mba_rules_heatmap.png)
+![Skill Demand: Historical + 2027 Projection](assets/charts/07_skill_forecast.png)
 
 ---
 

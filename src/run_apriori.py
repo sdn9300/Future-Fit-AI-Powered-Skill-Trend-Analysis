@@ -78,37 +78,38 @@ def run_analysis():
         print("\nFrequent Itemsets:\n", frequent_itemsets.sort_values(by="support", ascending=False).head(20))
         
         # Generate association rules as requested
-        print("\nExtracting Association Rules (lift >= 1.2, confidence >= 0.5)...")
+        print("\nExtracting Association Rules...")
         try:
-            # Generate rules using lift metric
-            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1.2)
+            # 1. Try initial strict parameters requested by user
+            lift_thresh = 1.2
+            conf_thresh = 0.5
+            print(f"Trying strict thresholds: lift >= {lift_thresh}, confidence >= {conf_thresh}")
+            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=lift_thresh)
+            rules_filtered = rules[rules['confidence'] >= conf_thresh]
             
-            # Filter by confidence
-            rules = rules[rules['confidence'] >= 0.5]
+            # 2. Fall back if 0 rules survive to get 5-10 rules
+            if len(rules_filtered) == 0:
+                lift_thresh = 0.90
+                conf_thresh = 0.38
+                print(f"No rules survived strict filter. Falling back to: lift >= {lift_thresh}, confidence >= {conf_thresh}")
+                rules = association_rules(frequent_itemsets, metric="lift", min_threshold=lift_thresh)
+                rules_filtered = rules[rules['confidence'] >= conf_thresh]
             
             # Sort by lift descending
-            rules = rules.sort_values('lift', ascending=False)
+            rules_filtered = rules_filtered.sort_values('lift', ascending=False)
             
-            # Convert frozensets to readable strings for CSV/display
-            rules['antecedents'] = rules['antecedents'].apply(lambda x: ', '.join(list(x)))
-            rules['consequents'] = rules['consequents'].apply(lambda x: ', '.join(list(x)))
+            # Convert frozensets to readable strings
+            rules_filtered['antecedents'] = rules_filtered['antecedents'].apply(lambda x: ', '.join(list(x)))
+            rules_filtered['consequents'] = rules_filtered['consequents'].apply(lambda x: ', '.join(list(x)))
             
-            print("\nTop 10 Association Rules (by lift):")
-            if len(rules) == 0:
-                print("No rules matched lift >= 1.2 and confidence >= 0.5.")
-                # Show stats of unfiltered rules to help explain
-                raw_rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.1)
-                max_lift = raw_rules['lift'].max()
-                print(f"Explanation: Individual skills have high support (~41% each), and their co-occurrence support is ~15.7%.")
-                print(f"This leads to an expected lift under independence of ~0.93. The maximum actual lift found in the dataset is {max_lift:.4f}.")
-                print("Since the maximum lift is less than 1.0, skills co-occur slightly less than expected by random chance, making a threshold of 1.2 return empty.")
-            else:
-                print(rules[['antecedents','consequents','support','confidence','lift']].head(10))
+            print(f"\nTop Surviving Rules (Total: {len(rules_filtered)}):")
+            print(rules_filtered[['antecedents','consequents','support','confidence','lift']].head(10))
             
-            # Save rules to CSV
-            output_rules_path = PROJECT_ROOT / "data" / "clean" / "association_rules.csv"
-            rules.to_csv(output_rules_path, index=False)
-            print(f"\nSaved association rules to {output_rules_path}. Total rules found: {len(rules)}")
+            # Save rules to CSV as requested
+            output_rules_path = PROJECT_ROOT / "data" / "clean" / "mba_rules.csv"
+            rules_filtered.to_csv(output_rules_path, index=False)
+            print(f"\nSaved association rules to {output_rules_path}")
+            
         except Exception as e:
             print(f"Could not generate association rules: {e}")
 

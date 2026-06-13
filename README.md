@@ -77,7 +77,7 @@ Using the **Apriori algorithm** (`mlxtend`) on all 50,000 job postings:
 
 ---
 
-## Yearly Skill Forecasting (Phase 6)
+## Yearly Skill Forecasting
 
 Using **Prophet** (with a simple linear regression fallback) to forecast yearly demand shares into 2027:
 - **Minimum Data Bins:** Only skills with $\ge 5$ years of real historical data points are analyzed (all 11 skills qualify with 7 years: 2020–2026).
@@ -99,7 +99,7 @@ Using **Prophet** (with a simple linear regression fallback) to forecast yearly 
 ## Project Structure
 ```text
 Future-Fit-AI-Powered-Skill-Trend-Analysis/
-|-- app.py                          # Streamlit multi-tab dashboard (5 panels)
+|-- app.py                          # Streamlit multi-tab dashboard (6 panels)
 |-- README.md
 |-- requirements.txt                # pandas, plotly, streamlit, mlxtend, groq …
 |-- .gitignore

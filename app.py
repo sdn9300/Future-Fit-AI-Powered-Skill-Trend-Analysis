@@ -76,6 +76,11 @@ def load_linkedin_validation_cached(path: Path) -> pd.DataFrame:
     return load_linkedin_validation(path)
 
 
+@st.cache_data(show_spinner="Loading association rules...")
+def load_mba_rules_cached(path: Path) -> pd.DataFrame:
+    return pd.read_csv(path)
+
+
 @st.cache_data(show_spinner="Parsing uploaded dataset...")
 def parse_uploaded_csv_cached(file_bytes: bytes) -> pd.DataFrame:
     import io
@@ -1074,6 +1079,70 @@ def render_gap_advisor_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
         st.markdown("</div>", unsafe_allow_html=True)
 
 
+def render_market_basket_panel(rules: pd.DataFrame) -> None:
+    st.markdown('<div class="section-label">skill associations</div>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-heading">Identify co-occurring skill relationships</h2>', unsafe_allow_html=True)
+    st.markdown(
+        "<p class='section-copy'>Market Basket Analysis reveals which skills frequently appear together in the same job postings. Choose a confidence threshold to see the rules.</p>",
+        unsafe_allow_html=True,
+    )
+
+    if rules.empty:
+        st.warning("No association rules found. Please ensure data/clean/mba_rules.csv exists.")
+        return
+
+    st.info("Support = how often a skill pair appears together. "
+            "Confidence = how often the rule holds true. "
+            "Lift > 1.2 means the pair co-occurs more than chance.")
+
+    # Determine dynamic confidence range based on available rules
+    min_rules_conf = float(rules['confidence'].min()) if not rules.empty else 0.1
+    max_rules_conf = float(rules['confidence'].max()) if not rules.empty else 1.0
+    
+    # We will use a flexible slider to handle different rule sets gracefully
+    min_conf = st.slider("Minimum Confidence", min_rules_conf, 1.0, min_rules_conf, 0.05)
+    filtered = rules[rules['confidence'] >= min_conf]
+
+    if filtered.empty:
+        st.warning("No rules match the selected confidence threshold.")
+    else:
+        left, right = st.columns([1.1, 0.9], gap="large")
+        with left:
+            st.dataframe(
+                filtered[['antecedents','consequents','support','confidence','lift']]
+                .rename(columns={
+                    'antecedents': 'If job needs',
+                    'consequents': 'Also needs',
+                    'support': 'Support',
+                    'confidence': 'Confidence',
+                    'lift': 'Lift'
+                }),
+                use_container_width=True
+            )
+        with right:
+            top10 = filtered.head(10).copy()
+            top10['label'] = top10['antecedents'] + " → " + top10['consequents']
+            fig = px.bar(
+                top10, 
+                x='lift', 
+                y='label', 
+                orientation='h',
+                color='confidence', 
+                title="Strongest Skill Associations by Lift",
+                color_continuous_scale="Blues"
+            )
+            # Apply styling to match theme
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_color='#f6e7bf',
+                title_font_color='#f6e7bf'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    st.caption("Lift > 1.2 = genuinely associated. Confidence = reliability of the rule.")
+
+
 def main() -> None:
     theme = get_theme()
     st.set_page_config(
@@ -1087,6 +1156,17 @@ def main() -> None:
     primary, linkedin_validation = load_dashboard_data()
     filtered_primary = apply_filters(primary)
 
+    # Load association rules for MBA tab
+    rules_file = find_data_file("mba_rules.csv")
+    if rules_file:
+        try:
+            rules = load_mba_rules_cached(rules_file)
+        except Exception as exc:
+            st.warning(f"Failed to load association rules: {exc}")
+            rules = pd.DataFrame()
+    else:
+        rules = pd.DataFrame()
+
     if filtered_primary.empty:
         st.error("The current filters return no rows. Reset the filters in the sidebar.")
         st.stop()
@@ -1096,7 +1176,7 @@ def main() -> None:
         "Primary source: cleaned 2020 to 2026 skill table. Validation source: LinkedIn sample. The brand name and color system are centralized so you can swap them later."
     )
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Trend Explorer", "Skill Heatmap", "Skill Gap Advisor"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Overview", "Trend Explorer", "Skill Heatmap", "Skill Gap Advisor", "🛒 Skill Associations"])
 
     with tab1:
         render_overview_tab(filtered_primary, theme)
@@ -1109,6 +1189,9 @@ def main() -> None:
 
     with tab4:
         render_gap_advisor_tab(filtered_primary, theme)
+
+    with tab5:
+        render_market_basket_panel(rules)
 
 
 if __name__ == "__main__":

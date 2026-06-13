@@ -9,3 +9,5 @@ streamlit>=1.28.0
 scipy>=1.9.0
 kaleido>=0.2.1
 mlxtend>=0.23.0
+prophet>=1.1.4
+cmdstanpy>=1.2.0

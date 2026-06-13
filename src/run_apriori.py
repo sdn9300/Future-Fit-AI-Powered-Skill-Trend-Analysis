@@ -110,8 +110,34 @@ def run_analysis():
             rules_filtered.to_csv(output_rules_path, index=False)
             print(f"\nSaved association rules to {output_rules_path}")
             
+            # Generate Visualization
+            print("\nGenerating visualization...")
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            
+            top10 = rules_filtered.head(10).copy()
+            top10['rule_label'] = top10['antecedents'] + " → " + top10['consequents']
+            
+            plt.figure(figsize=(10,6))
+            sns.barplot(data=top10, y='rule_label', x='lift', hue='rule_label', legend=False, palette='Blues_r')
+            
+            top_rule_label = top10.iloc[0]['rule_label']
+            top_rule_lift = top10.iloc[0]['lift']
+            plt.title(f"Strongest Skill Associations — Top Rule: {top_rule_label} (Lift {top_rule_lift:.2f})")
+            plt.xlabel("Lift Score")
+            plt.tight_layout()
+            
+            # Ensure the directory exists
+            chart_dir = PROJECT_ROOT / "assets" / "charts"
+            chart_dir.mkdir(parents=True, exist_ok=True)
+            chart_path = chart_dir / "06_mba_top_rules.png"
+            
+            plt.savefig(chart_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            print(f"Saved chart to {chart_path}")
+            
         except Exception as e:
-            print(f"Could not generate association rules: {e}")
+            print(f"Could not generate association rules or visualization: {e}")
 
 if __name__ == "__main__":
     run_analysis()

@@ -1,0 +1,11 @@
+skill,method,forecast_year,forecast_value,ci_lower,ci_upper,direction
+tensorflow,prophet,2027,140.9,126.8,157.8,Stable ->
+gcp,prophet,2027,136.9,125.7,147.5,Stable ->
+r,prophet,2027,128.3,116.6,140.7,Stable ->
+aws,prophet,2027,138.9,122.7,155.2,Stable ->
+azure,prophet,2027,135.9,117.7,155.2,Stable ->
+python,prophet,2027,130.3,103.6,154.6,Rising ^
+nlp,prophet,2027,122.1,108.5,134.9,Stable ->
+computer vision,prophet,2027,130.6,116.9,143.3,Stable ->
+sql,prophet,2027,116.7,99.4,132.3,Stable ->
+scikit-learn,prophet,2027,128.8,121.8,135.9,Stable ->

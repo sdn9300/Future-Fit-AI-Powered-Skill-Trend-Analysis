@@ -21,6 +21,7 @@ from src.skill_gap_advisor import (
     run_phase5_smoke_tests,
     validate_user_input,
 )
+from src.forecaster import prepare_yearly_series_from_df, forecast_skill, get_trend_direction, MIN_DATAPOINTS_REQUIRED
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -78,6 +79,11 @@ def load_linkedin_validation_cached(path: Path) -> pd.DataFrame:
 
 @st.cache_data(show_spinner="Loading association rules...")
 def load_mba_rules_cached(path: Path) -> pd.DataFrame:
+    return pd.read_csv(path)
+
+
+@st.cache_data(show_spinner="Loading forecast results...")
+def load_forecast_results_cached(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
@@ -1143,6 +1149,57 @@ def render_market_basket_panel(rules: pd.DataFrame) -> None:
     st.caption("Lift > 1.2 = genuinely associated. Confidence = reliability of the rule.")
 
 
+def render_forecast_panel(forecast_df: pd.DataFrame, df_track_b: pd.DataFrame) -> None:
+    st.markdown('<div class="section-label">forecasting model</div>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-heading">🔮 Skill Forecast 2027 (Yearly Projection)</h2>', unsafe_allow_html=True)
+    
+    st.warning("⚠️ Forecasts are based on only 5–7 years of annual data "
+               "(2020–2026). They indicate directional trends for 2027, "
+               "not precise predictions. Some skills use a simple linear "
+               "trend instead of Prophet where confidence intervals were "
+               "too wide to be meaningful.")
+
+    if forecast_df.empty:
+        st.info("No forecast data available.")
+        return
+
+    selected = st.multiselect("Select skills to visualize:",
+                              options=forecast_df['skill'].tolist(),
+                              default=forecast_df['skill'].head(3).tolist())
+
+    for skill in selected:
+        row = forecast_df[forecast_df['skill'] == skill].iloc[0]
+        yearly = prepare_yearly_series_from_df(df_track_b, skill)
+        direction = get_trend_direction(yearly, row['forecast_value'])
+
+        st.markdown('<div class="panel">', unsafe_allow_html=True)
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            # Format historical data for Plotly Line chart
+            fig = px.line(yearly, x='year', y='y', title=f"{skill.upper()} — Demand Trend (Historical + 2027 Forecast)")
+            # Add 2027 forecast point
+            fig.add_scatter(x=[int(row['forecast_year'])], y=[float(row['forecast_value'])],
+                            mode='markers', marker=dict(symbol='x', size=12, color='#d7b15a'),
+                            name='2027 Forecast')
+            
+            # Styling to match app theme
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_color='#f6e7bf',
+                title_font_color='#f6e7bf',
+                xaxis=dict(showgrid=False),
+                yaxis=dict(showgrid=False)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.metric(skill.upper(), direction, f"2027 Forecast: {row['forecast_value']}")
+            st.caption(f"Method used: **{row['method']}**")
+            if 'ci_lower' in row and not pd.isna(row['ci_lower']):
+                st.caption(f"80% CI: {row['ci_lower']} to {row['ci_upper']}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
 def main() -> None:
     theme = get_theme()
     st.set_page_config(
@@ -1167,6 +1224,17 @@ def main() -> None:
     else:
         rules = pd.DataFrame()
 
+    # Load forecast results for Tab 6
+    forecasts_file = find_data_file("forecast_results.csv")
+    if forecasts_file:
+        try:
+            forecasts = load_forecast_results_cached(forecasts_file)
+        except Exception as exc:
+            st.warning(f"Failed to load forecast results: {exc}")
+            forecasts = pd.DataFrame()
+    else:
+        forecasts = pd.DataFrame()
+
     if filtered_primary.empty:
         st.error("The current filters return no rows. Reset the filters in the sidebar.")
         st.stop()
@@ -1176,7 +1244,14 @@ def main() -> None:
         "Primary source: cleaned 2020 to 2026 skill table. Validation source: LinkedIn sample. The brand name and color system are centralized so you can swap them later."
     )
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Overview", "Trend Explorer", "Skill Heatmap", "Skill Gap Advisor", "🛒 Skill Associations"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "Overview", 
+        "Trend Explorer", 
+        "Skill Heatmap", 
+        "Skill Gap Advisor", 
+        "🛒 Skill Associations", 
+        "🔮 Skill Forecast 2027"
+    ])
 
     with tab1:
         render_overview_tab(filtered_primary, theme)
@@ -1192,6 +1267,12 @@ def main() -> None:
 
     with tab5:
         render_market_basket_panel(rules)
+
+    with tab6:
+        # Pass primary_skills_long dataset subset with real years
+        df_track_b = primary[primary['posted_year'] != 'Not Specified'].copy()
+        df_track_b['posted_year'] = df_track_b['posted_year'].astype(int)
+        render_forecast_panel(forecasts, df_track_b)
 
 
 if __name__ == "__main__":

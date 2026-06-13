@@ -278,6 +278,7 @@ def get_skill_gap_advice(
     client: Any | None = None,
     model: str | None = None,
     max_retries: int = 1,
+    mba_rules: Any = None,
 ) -> str:
     """
     Call Groq API with a structured prompt and return concise career guidance.
@@ -299,10 +300,25 @@ def get_skill_gap_advice(
 
     active_model = model or DEFAULT_GROQ_MODEL
     context = _build_skill_gap_context(user_skills, trending_skills)
+    
+    # Process market basket association insight
+    mba_context = ""
+    if mba_rules is not None and not mba_rules.empty:
+        user_skills_lower = [s.lower().strip() for s in user_skills]
+        relevant = mba_rules[mba_rules['antecedents'].str.lower().isin(user_skills_lower)]
+        if len(relevant) > 0:
+            top_rule = relevant.iloc[0]
+            mba_context = (f"\nAssociation insight: Jobs requiring "
+                            f"{top_rule['antecedents']} also require "
+                            f"{top_rule['consequents']} with "
+                            f"{top_rule['confidence']*100:.0f}% confidence.")
+
     prompts = [
         _format_user_prompt(context, concise=False),
         _format_user_prompt(context, concise=True),
     ]
+    if mba_context:
+        prompts = [p + "\n" + mba_context for p in prompts]
 
     last_error: Exception | None = None
     for attempt in range(max_retries + 1):
@@ -334,12 +350,30 @@ def get_skill_gap_advice(
     raise RuntimeError(f"Groq API call failed after retry: {last_error}")
 
 
-def generate_skill_gap_preview(user_skills: list[str], trending_skills: list[str]) -> str:
+def generate_skill_gap_preview(
+    user_skills: list[str],
+    trending_skills: list[str],
+    mba_rules: Any = None,
+) -> str:
     """
     Deterministic offline preview used for local smoke tests when no API key is available.
     """
     context = _build_skill_gap_context(user_skills, trending_skills)
-    return _format_offline_advice(context)
+    advice = _format_offline_advice(context)
+    
+    # Process market basket association insight
+    if mba_rules is not None and not mba_rules.empty:
+        user_skills_lower = [s.lower().strip() for s in user_skills]
+        relevant = mba_rules[mba_rules['antecedents'].str.lower().isin(user_skills_lower)]
+        if len(relevant) > 0:
+            top_rule = relevant.iloc[0]
+            mba_context = (f"\nAssociation insight: Jobs requiring "
+                            f"{top_rule['antecedents']} also require "
+                            f"{top_rule['consequents']} with "
+                            f"{top_rule['confidence']*100:.0f}% confidence.")
+            advice += "\n" + mba_context
+            
+    return advice
 
 
 def run_phase5_smoke_tests(df_exploded: pd.DataFrame | None = None) -> list[dict[str, Any]]:

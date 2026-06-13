@@ -1009,7 +1009,7 @@ def render_heatmap_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_gap_advisor_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
+def render_gap_advisor_tab(df: pd.DataFrame, theme: dict[str, str], mba_rules: pd.DataFrame | None = None) -> None:
     st.markdown('<div class="section-label">skill gap advisor</div>', unsafe_allow_html=True)
     st.markdown('<h2 class="section-heading">Paste your skills and get a prioritized learning path</h2>', unsafe_allow_html=True)
     st.markdown(
@@ -1050,13 +1050,13 @@ def render_gap_advisor_tab(df: pd.DataFrame, theme: dict[str, str]) -> None:
                 assert isinstance(parsed, list)
                 if api_key:
                     try:
-                        advice = get_skill_gap_advice(parsed, trending_skills)
+                        advice = get_skill_gap_advice(parsed, trending_skills, mba_rules=mba_rules)
                     except Exception as exc:
                         st.warning(f"Live Groq call failed. Showing a local preview instead: {exc}")
-                        advice = generate_skill_gap_preview(parsed, trending_skills)
+                        advice = generate_skill_gap_preview(parsed, trending_skills, mba_rules=mba_rules)
                 else:
                     st.info("Groq key not configured, so the app is showing a local preview.")
-                    advice = generate_skill_gap_preview(parsed, trending_skills)
+                    advice = generate_skill_gap_preview(parsed, trending_skills, mba_rules=mba_rules)
 
                 st.success(advice)
 
@@ -1188,7 +1188,7 @@ def main() -> None:
         render_heatmap_tab(filtered_primary, theme)
 
     with tab4:
-        render_gap_advisor_tab(filtered_primary, theme)
+        render_gap_advisor_tab(filtered_primary, theme, mba_rules=rules)
 
     with tab5:
         render_market_basket_panel(rules)

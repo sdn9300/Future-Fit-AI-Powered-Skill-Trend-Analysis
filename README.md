@@ -167,6 +167,7 @@ GROQ_API_KEY = "your_key_here"
 ---
 
 ## Planned Future Enhancements
+- **Yearly Forecast Projection (2027 only):** Indicative forecasting model using Prophet and simple linear trend fallback (see [docs/PIPELINE_DECISIONS.md](file:///c:/My%20Projects/Skill%20Trend%20Analysis/docs/PIPELINE_DECISIONS.md) for full methodology).
 - **Interactive Power BI Dashboard:** Build and integrate a Power BI dashboard using the exported Power BI-ready CSV (`primary_skills_powerbi.csv`) to show cross-filtering, time-slicers, and corporate KPI metrics.
 - **Expanded MBA corpus:** Re-run Apriori on a richer multi-source dataset to surface lift values above 1.0 for stronger, more actionable skill pairing rules.
 - **Temporal association rules:** Slice the basket analysis by year to detect which skill pairings are emerging versus declining.

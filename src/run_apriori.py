@@ -136,6 +136,24 @@ def run_analysis():
             plt.close()
             print(f"Saved chart to {chart_path}")
             
+            # Generate Heatmap
+            print("\nGenerating heatmap visualization...")
+            plt.figure(figsize=(10,8))
+            
+            # Pivot rules_filtered into a skill x skill lift matrix
+            pivot = rules_filtered.pivot_table(index='antecedents', columns='consequents', values='lift')
+            
+            sns.heatmap(pivot, annot=True, cmap='Blues', fmt='.2f', cbar_kws={'label': 'Lift Score'})
+            plt.title("Skill Association Lift Heatmap")
+            plt.xlabel("Consequents")
+            plt.ylabel("Antecedents")
+            plt.tight_layout()
+            
+            heatmap_path = chart_dir / "07_mba_rules_heatmap.png"
+            plt.savefig(heatmap_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            print(f"Saved heatmap to {heatmap_path}")
+            
         except Exception as e:
             print(f"Could not generate association rules or visualization: {e}")
 

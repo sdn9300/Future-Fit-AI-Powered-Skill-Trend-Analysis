@@ -1,0 +1,33 @@
+# MS 3.3 â€” Prompts for Kiro (Student Reference)
+
+---
+
+## Prompt 1: Create run_full_pipeline()
+
+In app.py, after the `triage_threads()` function and before the "Rendering helpers" section, add a function called `run_full_pipeline()` that returns a list of log strings. It should: (1) read `st.session_state.source` to determine thread source, (2) fetch threads using `load_sample_threads()` or `fetch_threads_via_engine()` based on source, (3) call `triage_threads()` on the fetched threads, (4) reset all downstream session state (drafts, approved, rejected, sent, booked), (5) loop over urgent + needs-reply threads and call `draft_reply` via `_get_draft_reply()` for each one, storing results in `st.session_state.drafts`, (6) set current_phase to "Approval Gate", (7) return the log. Handle errors at each step -- log them but don't crash. If one draft fails, continue to the next. Do NOT render any UI in this function -- only do work and return log strings.
+
+> Expected: a ~60-line function that returns `["Fetched 7 threads...", "Triaged: 2 urgent...", "Draft 1/4: ...done", ..., "Pipeline complete! 4 drafts ready for review."]`. Zero st.write/st.status calls.
+
+---
+
+## Prompt 2: Add _render_pipeline_execution() with live progress
+
+In app.py, immediately after `run_full_pipeline()`, add a function called `_render_pipeline_execution()` that executes the full pipeline with live progress UI. It should NOT call `run_full_pipeline()` -- instead run the same logic inline so it can update the UI at each step. Use `st.status("Running full pipeline...", expanded=True)` as the container. Call `status.update(label=...)` before each step begins. Use `st.write()` inside the status for each completed step (checkmark for success, X for failure). Handle three steps: fetch, triage, draft loop. On fatal errors (fetch/triage fail), set `state="error"` and return. After all drafts complete, set `state="complete"`. Outside the status block: store pipeline_log in session state, set current_phase to "Approval Gate", set `pipeline_running` to False, call `st.rerun()`.
+
+> Expected: a ~120-line function. st.status shows live progress. Every error path sets `pipeline_running = False`. Final st.rerun() is OUTSIDE the status block.
+
+---
+
+## Prompt 3: Add pipeline button to sidebar + wire up main()
+
+In app.py, make three changes to wire up the pipeline: (1) In `_init_session_state()`, add `"pipeline_running": False` and `"pipeline_log": []` to the defaults dict. (2) In `render_sidebar()`, right after the title/caption/divider, add a primary-styled "Run Full Pipeline" button that sets `st.session_state.pipeline_running = True` and calls `st.rerun()`. Add a caption below: "Fetches, triages, and drafts -- stops at Approval Gate." (3) In `main()`, check if `pipeline_running` is True -- if so, call `_render_pipeline_execution()` instead of `render_phase()`. This routes the main content area to the pipeline progress UI while it is running.
+
+> Expected: blue "Run Full Pipeline" button at top of sidebar. Clicking it shows pipeline progress in main content area. After completion, app auto-navigates to Approval Gate.
+
+---
+
+## Prompt 4: Add pipeline log to Approval Gate
+
+In app.py, in `render_approval_phase()`, after the header/description and before the drafts display, add a pipeline execution log. Read `st.session_state.pipeline_log` -- if it has entries, show them in a collapsed `st.expander("Pipeline Execution Log")` with checkmarks for success entries and X marks for entries containing "ERROR" or "FAILED". Add a "Clear log" button inside the expander that resets `pipeline_log` to `[]` and reruns. Add a divider after the expander.
+
+> Expected: collapsed expander at top of Approval Gate showing what the pipeline did. Only visible if pipeline was just run. "Clear log" button removes it.

@@ -1,0 +1,48 @@
+# Cline Prompt â€” MS2.2: The Draft Machine
+
+## Prompt to paste:
+
+```
+Build me a draft_machine.py that generates email replies using Gemini (gemini-2.5-flash).
+
+Requirements:
+1. Import `assemble_context` from context_builder.py (we built this yesterday)
+2. Use google.generativeai and load GEMINI_API_KEY from .env using python-dotenv
+3. Create a `draft_reply(thread)` function that:
+   - Calls assemble_context() to get the system + user prompts
+   - Adds "drafting rules" to the prompt with these constraints:
+     a. ONE-ASK RULE: every email has exactly ONE clear question or ONE clear response
+     b. LENGTH CONTROL: match thread energy, max 5 sentences, use numbered points if needed
+     c. NO AI FILLER: never say "I hope this finds you well", "Thank you for reaching out", etc.
+     d. STRUCTURE: acknowledge briefly -> give response -> ONE clear next step
+   - Calls Gemini with the combined prompt
+   - Returns ONLY the draft text (no subject line, no explanation)
+
+4. Also create a `draft_reply_with_metadata()` version that returns a dict with:
+   - The draft text
+   - Model name
+   - Thread subject
+   - Who we're replying to
+
+5. Include a demo at the bottom (if __name__ == "__main__") that:
+   - Uses the same sample thread from yesterday (Q3 Budget Review)
+   - Checks for the API key and prints helpful error if missing
+   - Prints the generated draft with metadata
+
+The tone_profile.json, past_replies.json, and context_builder.py are already in the same directory from yesterday.
+```
+
+---
+
+## After Cline generates the code, test it:
+
+```bash
+# Make sure .env has GEMINI_API_KEY (from Sprint 1)
+# Install if needed:
+pip install google-generativeai python-dotenv
+
+# Run the draft machine
+python draft_machine.py
+```
+
+---

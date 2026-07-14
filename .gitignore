@@ -1,8 +1,0 @@
-.streamlit/secrets.toml
-.streamlit/secrets.toml.example
-*.ipynb_checkpoints
-__pycache__/
-*.pyc
-.env
-data/raw/
-data/clean/linkedin_validation.csv

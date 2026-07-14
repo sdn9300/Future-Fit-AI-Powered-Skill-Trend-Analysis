@@ -1,0 +1,98 @@
+# Sprint Build 3 â€” Prompts for Kiro
+
+
+## Prompt 1: Create task_logger.py
+
+```
+Create a new file called task_logger.py in the project root.
+
+It needs three functions:
+
+1. log_action(action_type, thread_subject, detail, action_id)
+   - Appends a record to action_log.json
+   - Each record must have: timestamp (ISO format), action_type, thread_subject, detail, id
+   - action_type is either "sent" or "booked"
+   - detail is the recipient email (for "sent") or meeting title (for "booked")
+   - action_id is the Gmail message_id or Google Calendar event_id
+   - If action_log.json does not exist, create it
+
+2. get_action_log()
+   - Reads action_log.json and returns the full list
+   - Returns [] if the file does not exist or is empty
+
+3. clear_log()
+   - Writes an empty list to action_log.json
+
+No dependencies beyond the Python standard library (json, os, datetime).
+```
+
+> Expected result: task_logger.py with three clean functions that read/write action_log.json.
+
+---
+
+## Prompt 2: Wire log_action() into the Send button in app.py
+
+```
+In app.py, find the Send button handler in the Approval Gate phase (Phase 3).
+It currently calls send_reply() and shows a success message.
+
+Make two changes:
+1. Add "from task_logger import log_action" to the imports at the top of app.py.
+2. After a successful send (when result["id"] exists), call:
+   log_action(
+       action_type="sent",
+       thread_subject=thread["subject"],
+       detail=recipient,
+       action_id=result["id"],
+   )
+
+Do not change any other logic. Do not remove the existing st.success() line.
+```
+
+> Expected result: After clicking Send, a record with action_type "sent" appears in action_log.json.
+
+---
+
+## Prompt 3: Wire log_action() into the Book Meeting button in app.py
+
+```
+In app.py, find the Book Meeting button handler in the Approval Gate phase (Phase 3).
+It currently calls create_event() and shows a success message.
+
+After a successful booking (when event["id"] exists), call:
+   log_action(
+       action_type="booked",
+       thread_subject=thread["subject"],
+       detail=meeting_info.get("title", thread["subject"]),
+       action_id=event["id"],
+   )
+
+Do not change the existing create_event() call or the st.success() message.
+task_logger is already imported from Prompt 2 â€” do not add a duplicate import.
+```
+
+> Expected result: After clicking Book Meeting, a record with action_type "booked" appears in action_log.json.
+
+---
+
+## Prompt 4: Add action log display to the Export Proof phase in app.py
+
+```
+In app.py, find the Export Proof phase (Phase 4, where the download buttons are).
+
+After the approved drafts section (the loop showing original vs draft), add a new section:
+
+1. Subheader: "Action Log"
+2. Call get_action_log() to get the list of entries.
+3. If the list is empty, show st.info("No actions logged yet.")
+4. If the list has entries, display each entry in a row with four columns:
+   - Column 1: action_type in uppercase with an icon (ðŸ“¨ for "sent", ðŸ“… for "booked")
+   - Column 2: thread_subject in bold
+   - Column 3: detail field (recipient or meeting title) in backtick code style
+   - Column 4: timestamp formatted as "Jan 01 02:30 PM" using st.caption
+
+Add "from task_logger import get_action_log" to the imports if not already present.
+Do not modify the download buttons or the proof generation functions.
+```
+
+> Expected result: Export Proof page shows all sent/booked actions below the approved drafts, formatted in columns.

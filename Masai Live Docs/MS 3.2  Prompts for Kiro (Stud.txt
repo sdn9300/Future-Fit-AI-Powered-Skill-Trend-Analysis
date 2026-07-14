@@ -1,0 +1,84 @@
+# MS 3.2 â€” Prompts for Kiro (Student Reference)
+
+Follow these prompts in order during the MS3.2 session.
+
+---
+
+## Prompt 1: Add calendar scope to engine.py
+
+In engine.py, in the `_build_gmail_service()` function, add `"https://www.googleapis.com/auth/calendar"` as a third entry in the scopes list, after the existing gmail.readonly and gmail.send scopes.
+
+> After this, delete `token.json` and re-run. The browser will ask for additional calendar permission.
+
+---
+
+## Prompt 2: Create calendar_engine.py with _build_calendar_service()
+
+Create a new file called `calendar_engine.py` in the project root. Add the same IPv4 monkey-patch as engine.py, then a `_build_calendar_service()` function that follows the exact same OAuth pattern as engine.py's `_build_gmail_service()` -- shares the same credentials.json and token.json, uses the same three scopes -- but builds a Calendar v3 service instead of Gmail v1 at the end.
+
+> Expected: a new file with the IPv4 patch, shared SCOPES list (3 entries), and one function that returns `build("calendar", "v3", credentials=creds, cache_discovery=False)`.
+
+---
+
+## Prompt 3: Add parse_meeting_request()
+
+In calendar_engine.py, after `_build_calendar_service()`, add a function called `parse_meeting_request(thread)` that uses Gemini (gemini-2.5-flash) to extract meeting details from an email thread. It should read GEMINI_API_KEY from environment, concatenate all messages in the thread, send them to Gemini with a system instruction to return only valid JSON, and extract: proposed_times (list of ISO-8601 datetime strings), attendees (email addresses), topic (one-line summary), and duration_minutes (int, default 30). Include today's date in the prompt so Gemini resolves relative day names correctly. Strip markdown code fences before JSON parsing. Return an error dict with "parsing_error" key if anything fails -- don't crash.
+
+> Expected: function returns either `{"proposed_times": [...], "attendees": [...], "topic": "...", "duration_minutes": N}` on success, or `{"parsing_error": "...", "raw": "..."}` on failure.
+
+---
+
+## Prompt 4: Add check_availability() and find_free_slot()
+
+In calendar_engine.py, after `parse_meeting_request()`, add two functions: (1) `check_availability(time_min, time_max)` that calls the FreeBusy API on the user's primary calendar and returns True if free, False if busy. Append "Z" to times that lack timezone info. Catch all exceptions and return False as safe default. (2) `find_free_slot(proposed_times, duration_minutes)` that loops through proposed times, calculates end time using duration, calls check_availability for each, and returns the first free slot or None. Skip malformed time strings gracefully.
+
+> Expected: `check_availability` returns bool. `find_free_slot` returns the first available ISO-8601 string or None.
+
+---
+
+## Prompt 5: Add create_event()
+
+In calendar_engine.py, after `find_free_slot()`, add a function called `create_event(summary, start_time, duration_minutes, attendees, description="")` that creates a Google Calendar event. Calculate end_time from start + duration. Build the event body with summary, description, start/end with dateTime and timeZone "UTC". Only include attendees if they contain valid emails (have "@"). Use `calendarId="primary"` and `sendUpdates="all"` so attendees get invitation emails. Return the created event dict from the API.
+
+> Expected: function returns the full API response dict which includes "id", "htmlLink", "summary", "start", "end".
+
+---
+
+## Prompt 6: Add Book Meeting button to app.py
+
+In app.py, add a "Book Meeting" capability to the Approval Gate. Changes needed: (1) Add a `_get_calendar_engine()` cached import function after `_get_send_reply()`. (2) Add `"booked": {}` to session state defaults. (3) In `render_approval_phase()`, in the `elif is_approved and not is_sent` branch, check if the thread's `_category` is "meeting-request". If so, show a two-column layout with Send and Book Meeting buttons side by side. When Book Meeting is clicked: call `parse_meeting_request(thread)`, show extracted details in an info box, call `find_free_slot()` on proposed times, if a free slot is found call `create_event()` and store the result in `st.session_state.booked[thread_id]`, show success with calendar link, rerun. Handle errors at each step. If already booked, show the calendar link instead of the button.
+
+> Expected: meeting-request threads show [Send] [Book Meeting] side by side. Clicking Book Meeting runs the full parse-check-book flow with progress spinners.
+
+---
+
+## Verification Checklist
+
+After all six prompts:
+
+1. `streamlit run app.py` starts without errors
+2. Pull & Triage classifies a meeting-request thread correctly
+3. Generate Drafts, navigate to Approval Gate
+4. Approve the meeting-request thread -- both Send and Book Meeting buttons appear
+5. Click Book Meeting -- spinners show progress (parsing, checking, booking)
+6. Success message appears with "View in Google Calendar" link
+7. Open the link -- event exists with correct time, title, and attendees
+8. Back in app -- Book Meeting replaced by success message (no double-booking)
+
+---
+
+## Troubleshooting
+
+**"Google Calendar API has not been used in project... or it is disabled":** Go to console.cloud.google.com > APIs & Services > Enable APIs > search "Google Calendar API" > Enable.
+
+**"Request had insufficient authentication scopes":** Delete `token.json` and re-run. The old token does not have the calendar scope.
+
+**Gemini returns wrong dates:** Make sure today's date is injected into the prompt. Check that `datetime.now().strftime("%Y-%m-%d")` is being used.
+
+**FreeBusy always returns "free":** Ensure timezone info is appended to times ("Z" suffix). The FreeBusy API requires timezone-aware datetimes.
+
+**Book Meeting button does not appear:** Category must be exactly `"meeting-request"` (hyphen, lowercase). Check what triage.py emits.
+
+**create_event fails with 400 error:** Make sure attendees field is conditional -- only included if valid emails exist. Empty attendees list causes API errors.
+
+**Event at wrong time:** If your timezone is not UTC, change `"timeZone": "UTC"` in the event body to your local timezone (e.g., "Asia/Kolkata").
